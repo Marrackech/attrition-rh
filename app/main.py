@@ -1,0 +1,22 @@
+from fastapi import FastAPI
+from app.schemas import EmployeeInput, PredictionOutput
+from app.model import predict
+
+app = FastAPI(
+    title="Attrition RH API",
+    description="API de prédiction de départ d'employés",
+    version="1.0.0"
+)
+
+@app.get("/")
+def root():
+    return {"message": "API Attrition RH — opérationnelle"}
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+@app.post("/predict", response_model=PredictionOutput)
+def predict_attrition(employee: EmployeeInput):
+    result = predict(employee)
+    return result
