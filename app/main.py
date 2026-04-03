@@ -26,3 +26,8 @@ def predict_attrition(employee: EmployeeInput):
     result = predict(employee)
     save_prediction(employee.dict(), result.dict())
     return result
+    #(le modèle Pydantic) fait automatiquement :
+
+# validation des types (int, float)
+# validation des contraintes (ge=0, le=70, etc.)
+# gestion des erreurs → retourne 422 automatiquement
