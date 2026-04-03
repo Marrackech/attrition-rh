@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from app.schemas import EmployeeInput, PredictionOutput
 from app.model import predict
 from app.database import init_db, save_prediction
@@ -23,11 +23,15 @@ def health():
 
 @app.post("/predict", response_model=PredictionOutput)
 def predict_attrition(employee: EmployeeInput):
-    result = predict(employee)
-    save_prediction(employee.dict(), result.dict())
-    return result
-    #(le modèle Pydantic) fait automatiquement :
-
-# validation des types (int, float)
-# validation des contraintes (ge=0, le=70, etc.)
-# gestion des erreurs → retourne 422 automatiquement
+    try:
+        # 1. Calcul de la prédiction via le modèle
+        result = predict(employee)
+        
+        # 2. Sauvegarde dans la base de données
+        # On convertit les objets Pydantic en dictionnaires
+        save_prediction(employee.model_dump(), result.model_dump())
+        
+        return result
+    except Exception as e:
+        # Permet de renvoyer une erreur 500 propre au lieu d'un crash serveur
+        raise HTTPException(status_code=500, detail=str(e))

@@ -1,7 +1,6 @@
 import os
 from sqlalchemy import create_engine, Column, Integer, Float, String, DateTime
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker
 from dotenv import load_dotenv
 from datetime import datetime
 
@@ -9,8 +8,9 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(bind=engine)
+engine = create_engine(DATABASE_URL, echo=False, future=True)
+SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+
 Base = declarative_base()
 
 class Prediction(Base):
@@ -46,5 +46,9 @@ def save_prediction(employee_data: dict, result: dict):
         )
         db.add(prediction)
         db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"Erreur lors de la sauvegarde : {e}")
+        raise e
     finally:
         db.close()
