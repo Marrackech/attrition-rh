@@ -7,13 +7,44 @@ sdk: docker
 pinned: false
 ---
 
-# Attrition RH API
+# 🏢 Prédiction d'Attrition RH
 
-API de prédiction de départ d'employés basée sur un modèle de Machine Learning.
+API Machine Learning pour prédire si un employé va quitter l'entreprise.
 
-## Endpoints
+## 🚀 API en production
 
-- `GET /` — Status de l'API
-- `GET /health` — Health check
-- `POST /predict` — Prédiction de départ
-- `GET /docs` — Documentation Swagger
+🔗 [https://usermarrakech-attrition-rh-api.hf.space/docs](https://usermarrakech-attrition-rh-api.hf.space/docs)
+
+## 🎯 Résultats du modèle
+
+| Métrique | Score |
+|---|---|
+| Modèle | Logistic Regression |
+| Recall | 70% |
+| F1-Score | 0.52 |
+| Couverture tests | 98% |
+
+## ⚙️ Installation locale
+
+```bash
+git clone https://github.com/Marrackech/attrition-rh.git
+cd attrition-rh
+conda create -n attrition-api python=3.10
+conda activate attrition-api
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8001
+```
+
+## 🧪 Tests
+
+```bash
+pytest tests/ -v --cov=app
+```
+
+## 🛠️ Stack
+
+FastAPI · scikit-learn · PostgreSQL NEON · Docker · GitHub Actions · Hugging Face
+
+## 👤 Auteur
+
+Haroun Tanane 
