@@ -1,24 +1,46 @@
-name: Run Tests
+name: CI/CD Attrition RH
 
-on: [push]
+on:
+  push:
+    branches: [main, feature/api]
+  pull_request:
+    branches: [main]
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Récupérer le code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Installer Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: 3.10
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
-    - name: Installer les dépendances
-      run: |
-        pip install -r requirements.txt
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest pytest-cov httpx
 
-    - name: Lancer les tests
-      run: |
-        pytest
+      - name: Run tests
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pytest tests/ -v --cov=app --cov-report=term-missing
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to Hugging Face
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          git config user.email "linasafe5@gmail.com"
+          git config user.name "Marrackech"
+          git remote add huggingface https://UserMarrakech:$HF_TOKEN@huggingface.co/spaces/UserMarrakech/attrition-rh-api
+          git push huggingface main --force
