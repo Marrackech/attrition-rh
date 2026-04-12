@@ -43,3 +43,11 @@ def test_database_error_handling(valid_payload):
         response = client.post("/predict", json=valid_payload)
         assert response.status_code == 500
         assert "Database Connection Error" in response.json()["detail"]
+
+        ##pipeline ci/cd seulement pour deploiyer sur hugging face 
+        ## commit vers github et le deploiement est automatique 
+        ## assurer le fonctionnement via les tests unitaires et fonctionnels
+        ## deployer sur huggingfce et lancer le pipeline 
+        ##
+        ##
+        ##
