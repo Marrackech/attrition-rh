@@ -10,21 +10,17 @@ app = FastAPI(
     version="1.0.0"
 )
 
-
 @app.on_event("startup")
 def startup():
     init_db()
-
 
 @app.get("/")
 def root():
     return {"message": "API Attrition RH — opérationnelle"}
 
-
 @app.get("/health")
 def health():
     return {"status": "ok"}
-
 
 @app.post("/predict", response_model=PredictionOutput)
 def predict_attrition(employee: EmployeeInput):
@@ -32,13 +28,13 @@ def predict_attrition(employee: EmployeeInput):
     start_time = time.time()
 
     try:
-        # 1. Prédiction ML
+        # 1. ML prediction
         result = predict(employee)
 
-        # 2. Temps d'inférence
+        # 2. timing
         inference_time_ms = (time.time() - start_time) * 1000
 
-        # 3. Log data (monitoring MLOps)
+        # 3. log data
         log_data = {
             "inference_time_ms": inference_time_ms,
             "api_response_time_ms": inference_time_ms,
@@ -46,7 +42,7 @@ def predict_attrition(employee: EmployeeInput):
             "status": "success"
         }
 
-        # 4. Save DB (employees + predictions + logs)
+        # 4. DB save
         save_prediction(
             employee.model_dump(),
             result.model_dump(),
@@ -57,7 +53,6 @@ def predict_attrition(employee: EmployeeInput):
 
     except Exception as e:
 
-        # log erreur
         log_data = {
             "inference_time_ms": 0,
             "api_response_time_ms": 0,
@@ -66,11 +61,15 @@ def predict_attrition(employee: EmployeeInput):
         }
 
         try:
-            save_prediction(employee.model_dump(), {
-                "probabilite_depart": 0,
-                "prediction": 0,
-                "interpretation": "error"
-            }, log_data)
+            save_prediction(
+                employee.model_dump(),
+                {
+                    "probabilite_depart": 0,
+                    "prediction": 0,
+                    "interpretation": "error"
+                },
+                log_data
+            )
         except:
             pass
 

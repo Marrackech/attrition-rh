@@ -14,7 +14,7 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 Base = declarative_base()
 
 # =========================
-# 1. EMPLOYEES TABLE
+# EMPLOYEE TABLE
 # =========================
 class Employee(Base):
     __tablename__ = "employees"
@@ -38,7 +38,7 @@ class Employee(Base):
 
 
 # =========================
-# 2. PREDICTIONS TABLE
+# PREDICTION TABLE
 # =========================
 class Prediction(Base):
     __tablename__ = "predictions"
@@ -57,7 +57,7 @@ class Prediction(Base):
 
 
 # =========================
-# 3. LOGS / MONITORING TABLE
+# LOG TABLE
 # =========================
 class PredictionLog(Base):
     __tablename__ = "prediction_logs"
@@ -69,12 +69,10 @@ class PredictionLog(Base):
     request_timestamp = Column(DateTime, default=datetime.utcnow)
 
     inference_time_ms = Column(Float)
-
     api_response_time_ms = Column(Float)
 
     model_version = Column(String)
-
-    status = Column(String)  # success / error
+    status = Column(String)
 
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -87,17 +85,18 @@ def init_db():
 
 
 # =========================
-# SAVE PREDICTION
+# SAVE FUNCTION
 # =========================
 def save_prediction(employee_data: dict, result: dict, log_data: dict = None):
-    db = SessionLocal()
-    try:
-        print("🔵 employee_data:", employee_data)
-        print("🔵 result:", result)
 
-        # =====================
-        # 1. EMPLOYEE SAFE
-        # =====================
+    print("\n🚀 SAVE_PREDICTION CALLED")
+    print("EMPLOYEE:", employee_data)
+    print("RESULT:", result)
+
+    db = SessionLocal()
+
+    try:
+        # 1. Employee
         employee = Employee(
             age=employee_data.get("age"),
             revenu_mensuel=employee_data.get("revenu_mensuel"),
@@ -114,11 +113,9 @@ def save_prediction(employee_data: dict, result: dict, log_data: dict = None):
         db.add(employee)
         db.flush()
 
-        print("🟢 Employee created ID:", employee.id)
+        print("✅ Employee ID:", employee.id)
 
-        # =====================
-        # 2. PREDICTION SAFE
-        # =====================
+        # 2. Prediction
         prediction = Prediction(
             employee_id=employee.id,
             probabilite_depart=result.get("probabilite_depart"),
@@ -128,9 +125,7 @@ def save_prediction(employee_data: dict, result: dict, log_data: dict = None):
 
         db.add(prediction)
 
-        # =====================
-        # 3. LOG SAFE
-        # =====================
+        # 3. Logs
         if log_data:
             log = PredictionLog(
                 employee_id=employee.id,
@@ -142,11 +137,12 @@ def save_prediction(employee_data: dict, result: dict, log_data: dict = None):
             db.add(log)
 
         db.commit()
-        print("✅ FULL SAVE SUCCESS")
+
+        print("✅ DB COMMIT SUCCESS")
 
     except Exception as e:
         db.rollback()
-        print("❌ DB ERROR:", str(e))
+        print("❌ ERROR:", str(e))
         raise e
 
     finally:
