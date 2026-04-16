@@ -12,29 +12,22 @@ app = FastAPI(
 
 @app.on_event("startup")
 def startup():
+    # Initialise les tables au lancement
     init_db()
 
 @app.get("/")
 def root():
     return {"message": "API Attrition RH — opérationnelle"}
 
-@app.get("/health")
-def health():
-    return {"status": "ok"}
-
 @app.post("/predict", response_model=PredictionOutput)
 def predict_attrition(employee: EmployeeInput):
-
     start_time = time.time()
-
     try:
-        # 1. ML prediction
+        # 1. Prédiction via le modèle ML
         result = predict(employee)
-
-        # 2. timing
         inference_time_ms = (time.time() - start_time) * 1000
 
-        # 3. log data
+        # 2. Préparation des logs techniques
         log_data = {
             "inference_time_ms": inference_time_ms,
             "api_response_time_ms": inference_time_ms,
@@ -42,35 +35,17 @@ def predict_attrition(employee: EmployeeInput):
             "status": "success"
         }
 
-        # 4. DB save
+        # 3. Sauvegarde en base de données
+        # On sépare bien les dictionnaires pour éviter l'erreur de colonnes
         save_prediction(
-            employee.model_dump(),
-            result.model_dump(),
-            log_data
+            employee_data=employee.model_dump(), 
+            result=result.model_dump(), 
+            log_data=log_data
         )
 
         return result
 
     except Exception as e:
-
-        log_data = {
-            "inference_time_ms": 0,
-            "api_response_time_ms": 0,
-            "model_version": "v1.0",
-            "status": "error"
-        }
-
-        try:
-            save_prediction(
-                employee.model_dump(),
-                {
-                    "probabilite_depart": 0,
-                    "prediction": 0,
-                    "interpretation": "error"
-                },
-                log_data
-            )
-        except:
-            pass
-
+        # En cas d'erreur, on renvoie une erreur 500 détaillée
+        print(f"Erreur lors de la prédiction : {e}")
         raise HTTPException(status_code=500, detail=str(e))
