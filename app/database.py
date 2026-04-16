@@ -92,33 +92,61 @@ def init_db():
 def save_prediction(employee_data: dict, result: dict, log_data: dict = None):
     db = SessionLocal()
     try:
-        # 1. Create employee
-        employee = Employee(**employee_data)
-        db.add(employee)
-        db.flush()  # récupère employee.id sans commit
+        print("🔵 employee_data:", employee_data)
+        print("🔵 result:", result)
 
-        # 2. Create prediction
+        # =====================
+        # 1. EMPLOYEE SAFE
+        # =====================
+        employee = Employee(
+            age=employee_data.get("age"),
+            revenu_mensuel=employee_data.get("revenu_mensuel"),
+            annees_dans_l_entreprise=employee_data.get("annees_dans_l_entreprise"),
+            heures_supplementaires=employee_data.get("heures_supplementaires"),
+            satisfaction_employee_nature_travail=employee_data.get("satisfaction_employee_nature_travail"),
+            niveau_hierarchique_poste=employee_data.get("niveau_hierarchique_poste"),
+            nombre_participation_pee=employee_data.get("nombre_participation_pee"),
+            score_risque_depart=employee_data.get("score_risque_depart"),
+            ratio_stagnation=employee_data.get("ratio_stagnation"),
+            ratio_experience_interne=employee_data.get("ratio_experience_interne"),
+        )
+
+        db.add(employee)
+        db.flush()
+
+        print("🟢 Employee created ID:", employee.id)
+
+        # =====================
+        # 2. PREDICTION SAFE
+        # =====================
         prediction = Prediction(
             employee_id=employee.id,
-            probabilite_depart=result["probabilite_depart"],
-            prediction=result["prediction"],
-            interpretation=result["interpretation"]
+            probabilite_depart=result.get("probabilite_depart"),
+            prediction=result.get("prediction"),
+            interpretation=result.get("interpretation")
         )
+
         db.add(prediction)
 
-        # 3. Create log (optional)
+        # =====================
+        # 3. LOG SAFE
+        # =====================
         if log_data:
             log = PredictionLog(
                 employee_id=employee.id,
-                **log_data
+                inference_time_ms=log_data.get("inference_time_ms"),
+                api_response_time_ms=log_data.get("api_response_time_ms"),
+                model_version=log_data.get("model_version"),
+                status=log_data.get("status"),
             )
             db.add(log)
 
         db.commit()
+        print("✅ FULL SAVE SUCCESS")
 
     except Exception as e:
         db.rollback()
-        print(f"Erreur lors de la sauvegarde : {e}")
+        print("❌ DB ERROR:", str(e))
         raise e
 
     finally:
