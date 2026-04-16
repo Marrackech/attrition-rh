@@ -14,13 +14,12 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 Base = declarative_base()
 
 # =========================
-# EMPLOYEE TABLE
+# TABLE EMPLOYEES
 # =========================
 class Employee(Base):
     __tablename__ = "employees"
 
     id = Column(Integer, primary_key=True, index=True)
-
     age = Column(Integer)
     revenu_mensuel = Column(Float)
     annees_dans_l_entreprise = Column(Integer)
@@ -33,70 +32,54 @@ class Employee(Base):
     ratio_experience_interne = Column(Float)
 
     created_at = Column(DateTime, default=datetime.utcnow)
-
     predictions = relationship("Prediction", back_populates="employee")
 
-
 # =========================
-# PREDICTION TABLE
+# TABLE PREDICTIONS
 # =========================
 class Prediction(Base):
     __tablename__ = "predictions"
 
     id = Column(Integer, primary_key=True, index=True)
-
     employee_id = Column(Integer, ForeignKey("employees.id"))
-
     probabilite_depart = Column(Float)
     prediction = Column(Integer)
     interpretation = Column(String)
 
     created_at = Column(DateTime, default=datetime.utcnow)
-
     employee = relationship("Employee", back_populates="predictions")
 
-
 # =========================
-# LOG TABLE
+# TABLE LOGS
 # =========================
 class PredictionLog(Base):
     __tablename__ = "prediction_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-
     employee_id = Column(Integer, nullable=True)
-
-    request_timestamp = Column(DateTime, default=datetime.utcnow)
-
     inference_time_ms = Column(Float)
     api_response_time_ms = Column(Float)
-
     model_version = Column(String)
     status = Column(String)
 
     created_at = Column(DateTime, default=datetime.utcnow)
 
-
 # =========================
-# INIT DB
+# INITIALISATION DB
 # =========================
 def init_db():
+    # ATTENTION : Décommentez drop_all pour le premier push sur Hugging Face
+    # afin de supprimer l'ancienne table qui cause l'erreur 500.
+    # Base.metadata.drop_all(bind=engine) 
     Base.metadata.create_all(bind=engine)
 
-
 # =========================
-# SAVE FUNCTION
+# FONCTION DE SAUVEGARDE
 # =========================
 def save_prediction(employee_data: dict, result: dict, log_data: dict = None):
-
-    print("\n🚀 SAVE_PREDICTION CALLED")
-    print("EMPLOYEE:", employee_data)
-    print("RESULT:", result)
-
     db = SessionLocal()
-
     try:
-        # 1. Employee
+        # 1. On crée l'employé
         employee = Employee(
             age=employee_data.get("age"),
             revenu_mensuel=employee_data.get("revenu_mensuel"),
@@ -109,23 +92,19 @@ def save_prediction(employee_data: dict, result: dict, log_data: dict = None):
             ratio_stagnation=employee_data.get("ratio_stagnation"),
             ratio_experience_interne=employee_data.get("ratio_experience_interne"),
         )
-
         db.add(employee)
-        db.flush()
+        db.flush() 
 
-        print("✅ Employee ID:", employee.id)
-
-        # 2. Prediction
+        # 2. On crée la prédiction (STRICTEMENT SANS AGE NI REVENU)
         prediction = Prediction(
             employee_id=employee.id,
             probabilite_depart=result.get("probabilite_depart"),
             prediction=result.get("prediction"),
             interpretation=result.get("interpretation")
         )
-
         db.add(prediction)
 
-        # 3. Logs
+        # 3. On crée le log technique
         if log_data:
             log = PredictionLog(
                 employee_id=employee.id,
@@ -137,13 +116,9 @@ def save_prediction(employee_data: dict, result: dict, log_data: dict = None):
             db.add(log)
 
         db.commit()
-
-        print("✅ DB COMMIT SUCCESS")
-
     except Exception as e:
         db.rollback()
-        print("❌ ERROR:", str(e))
+        print(f"Erreur DB : {e}")
         raise e
-
     finally:
         db.close()
