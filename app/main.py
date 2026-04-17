@@ -46,10 +46,14 @@ def predict_attrition(employee: EmployeeInput):
             "status": "success"
         }
 
-        # 4. Save DB (employees + predictions + logs)
+        # 4. Save DB — dict explicite pour éviter les champs parasites ✅
         save_prediction(
             employee.model_dump(),
-            result.model_dump(),
+            {
+                "probabilite_depart": result.probabilite_depart,
+                "prediction": result.prediction,
+                "interpretation": result.interpretation,
+            },
             log_data
         )
 
@@ -57,7 +61,6 @@ def predict_attrition(employee: EmployeeInput):
 
     except Exception as e:
 
-        # log erreur
         log_data = {
             "inference_time_ms": 0,
             "api_response_time_ms": 0,
@@ -66,11 +69,15 @@ def predict_attrition(employee: EmployeeInput):
         }
 
         try:
-            save_prediction(employee.model_dump(), {
-                "probabilite_depart": 0,
-                "prediction": 0,
-                "interpretation": "error"
-            }, log_data)
+            save_prediction(
+                employee.model_dump(),
+                {
+                    "probabilite_depart": 0,
+                    "prediction": 0,
+                    "interpretation": "error"
+                },
+                log_data
+            )
         except:
             pass
 

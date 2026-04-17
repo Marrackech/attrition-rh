@@ -27,6 +27,7 @@ class PredictionOutput(BaseModel):
     probabilite_depart: float
     prediction: int
     interpretation: str
+    seuil_utilise: Optional[float] = None   # ✅ AJOUT
     model_version: Optional[str] = "v1.0"
     created_at: Optional[datetime] = None
 
