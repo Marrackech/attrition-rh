@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
 
+
 # =========================
 # INPUT (EMPLOYEE)
 # =========================
@@ -22,21 +23,21 @@ class EmployeeInput(BaseModel):
 # OUTPUT API (PREDICTION)
 # =========================
 class PredictionOutput(BaseModel):
-    employee_id: Optional[int]
+    employee_id: Optional[int] = None
     probabilite_depart: float
     prediction: int
     interpretation: str
     model_version: Optional[str] = "v1.0"
-    created_at: Optional[datetime]
+    created_at: Optional[datetime] = None
 
 
 # =========================
 # LOG (OPTIONNEL DEBUG)
 # =========================
 class PredictionLogSchema(BaseModel):
-    employee_id: Optional[int]
+    employee_id: Optional[int] = None
     inference_time_ms: float
     api_response_time_ms: float
     model_version: str
     status: str
-    request_timestamp: Optional[datetime]
+    request_timestamp: Optional[datetime] = None
