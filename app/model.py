@@ -12,7 +12,6 @@ model = joblib.load(os.path.join(BASE_DIR, "models", "best_lr.pkl"))
 scaler = joblib.load(os.path.join(BASE_DIR, "models", "scaler.pkl"))
 with open(os.path.join(BASE_DIR, "models", "colonnes.json"), "r") as f:
     COLONNES = json.load(f)
-
 def predict(employee: EmployeeInput) -> PredictionOutput:
     # 1. Conversion Pydantic -> Dict
     input_dict = employee.model_dump()
