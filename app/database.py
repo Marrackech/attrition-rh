@@ -8,13 +8,10 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# engine = create_engine(DATABASE_URL, echo=False, future=True)
-
-
 engine = create_engine(
     DATABASE_URL,
-    pool_pre_ping=True,   # 🔥 vérifie connexion avant requête
-    pool_recycle=300      # 🔥 recycle toutes les 5 min
+    pool_pre_ping=True,
+    pool_recycle=300
 )
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
@@ -60,7 +57,7 @@ class Prediction(Base):
 
 
 # =========================
-# 3. LOGS / MONITORING TABLE
+# 3. PREDICTION_LOGS TABLE
 # =========================
 class PredictionLog(Base):
     __tablename__ = "prediction_logs"
@@ -85,65 +82,11 @@ def init_db():
 # =========================
 # SAVE PREDICTION
 # =========================
-# def save_prediction(employee_data: dict, result: dict, log_data: dict = None):
-#     db = SessionLocal()
-#     try:
-#         # 1. Créer l'employé avec uniquement les colonnes Employee
-#         employee = Employee(
-#             age=employee_data["age"],
-#             revenu_mensuel=employee_data["revenu_mensuel"],
-#             annees_dans_l_entreprise=employee_data["annees_dans_l_entreprise"],
-#             heures_supplementaires=employee_data["heures_supplementaires"],
-#             satisfaction_employee_nature_travail=employee_data["satisfaction_employee_nature_travail"],
-#             niveau_hierarchique_poste=employee_data["niveau_hierarchique_poste"],
-#             nombre_participation_pee=employee_data["nombre_participation_pee"],
-#             score_risque_depart=employee_data["score_risque_depart"],
-#             ratio_stagnation=employee_data["ratio_stagnation"],
-#             ratio_experience_interne=employee_data["ratio_experience_interne"]
-#         )
-#         db.add(employee)
-#         db.flush()
-
-#         # 2. Créer la prédiction avec uniquement les colonnes Prediction
-#         prediction = Prediction(
-#             employee_id=employee.id,
-#             probabilite_depart=result["probabilite_depart"],
-#             prediction=result["prediction"],
-#             interpretation=result["interpretation"]
-#         )
-#         db.add(prediction)
-
-#         # 3. Créer le log (optionnel)
-#         if log_data:
-#             log = PredictionLog(
-#                 employee_id=employee.id,
-#                 inference_time_ms=log_data["inference_time_ms"],
-#                 api_response_time_ms=log_data["api_response_time_ms"],
-#                 model_version=log_data["model_version"],
-#                 status=log_data["status"]
-#             )
-#             db.add(log)
-
-#         db.commit()
-
-#     except Exception as e:
-#         db.rollback()
-#     print(f"Erreur lors de la sauvegarde : {e}")
-#     print("🔥 DB ERROR TYPE:", type(e))
-#     print("🔥 DB ERROR:", str(e))
-#     raise e
-
-
-#     finally:
-#         db.close()
-
 def save_prediction(employee_data: dict, result: dict, log_data: dict = None):
     db = SessionLocal()
 
     try:
-        # =========================
         # 1. EMPLOYEE
-        # =========================
         employee = Employee(
             age=employee_data["age"],
             revenu_mensuel=employee_data["revenu_mensuel"],
@@ -156,25 +99,19 @@ def save_prediction(employee_data: dict, result: dict, log_data: dict = None):
             ratio_stagnation=employee_data["ratio_stagnation"],
             ratio_experience_interne=employee_data["ratio_experience_interne"]
         )
-
         db.add(employee)
         db.flush()
 
-        # =========================
         # 2. PREDICTION
-        # =========================
         prediction = Prediction(
             employee_id=employee.id,
             probabilite_depart=result["probabilite_depart"],
             prediction=result["prediction"],
             interpretation=result["interpretation"]
         )
-
         db.add(prediction)
 
-        # =========================
         # 3. LOG
-        # =========================
         if log_data:
             log = PredictionLog(
                 employee_id=employee.id,
