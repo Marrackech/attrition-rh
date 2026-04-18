@@ -76,11 +76,11 @@ class PredictionLog(Base):
 # INIT DB
 # =========================
 
-# def init_db():
-#     Base.metadata.create_all(bind=engine)
-
 def init_db():
-    print("DB INIT DISABLED")
+    Base.metadata.create_all(bind=engine)
+
+# def init_db():
+#     print("DB INIT DISABLED")
 
 # def init_db():
 #     # Drop et recrée pour forcer le bon schéma
