@@ -76,21 +76,21 @@ class PredictionLog(Base):
 # INIT DB
 # =========================
 
-def init_db():
-    Base.metadata.create_all(bind=engine)
+# def init_db():
+#     Base.metadata.create_all(bind=engine)
 
 # def init_db():
 #     print("DB INIT DISABLED")
 
-# def init_db():
-#     # Drop et recrée pour forcer le bon schéma
-#     from sqlalchemy import text
-#     with engine.connect() as conn:
-#         conn.execute(text("DROP TABLE IF EXISTS prediction_logs CASCADE"))
-#         conn.execute(text("DROP TABLE IF EXISTS predictions CASCADE"))
-#         conn.execute(text("DROP TABLE IF EXISTS employees CASCADE"))
-#         conn.commit()
-#     Base.metadata.create_all(bind=engine)
+def init_db():
+    # Drop et recrée pour forcer le bon schéma
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        conn.execute(text("DROP TABLE IF EXISTS prediction_logs CASCADE"))
+        conn.execute(text("DROP TABLE IF EXISTS predictions CASCADE"))
+        conn.execute(text("DROP TABLE IF EXISTS employees CASCADE"))
+        conn.commit()
+    Base.metadata.create_all(bind=engine)
 
 
 # =========================
