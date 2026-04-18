@@ -1,11 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional
-from datetime import datetime
 
-
-# =========================
-# INPUT (EMPLOYEE)
-# =========================
 class EmployeeInput(BaseModel):
     age: int = Field(..., ge=18, le=70)
     revenu_mensuel: float = Field(..., gt=0)
@@ -18,27 +12,8 @@ class EmployeeInput(BaseModel):
     ratio_stagnation: float = Field(..., ge=0)
     ratio_experience_interne: float = Field(..., ge=0)
 
-
-# =========================
-# OUTPUT API (PREDICTION)
-# =========================
 class PredictionOutput(BaseModel):
-    employee_id: Optional[int] = None
     probabilite_depart: float
     prediction: int
+    seuil_utilise: float
     interpretation: str
-    seuil_utilise: Optional[float] = None   # ✅ AJOUT
-    model_version: Optional[str] = "v1.0"
-    created_at: Optional[datetime] = None
-
-
-# =========================
-# LOG (OPTIONNEL DEBUG)
-# =========================
-class PredictionLogSchema(BaseModel):
-    employee_id: Optional[int] = None
-    inference_time_ms: float
-    api_response_time_ms: float
-    model_version: str
-    status: str
-    request_timestamp: Optional[datetime] = None
