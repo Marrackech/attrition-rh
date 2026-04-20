@@ -84,3 +84,14 @@ def predict_attrition(employee: EmployeeInput):
         except:
             pass
         raise HTTPException(status_code=500, detail=str(e))
+
+
+
+
+        @app.get("/debug-env")
+def debug_env():
+    return {
+        "API_KEY_set": os.getenv("API_KEY") is not None,
+        "API_set": os.getenv("API") is not None,
+        "ENV": os.getenv("ENV"),
+    }
