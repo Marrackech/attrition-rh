@@ -12,22 +12,38 @@ model = joblib.load(os.path.join(BASE_DIR, "models", "best_lr.pkl"))
 scaler = joblib.load(os.path.join(BASE_DIR, "models", "scaler.pkl"))
 with open(os.path.join(BASE_DIR, "models", "colonnes.json"), "r") as f:
     COLONNES = json.load(f)
+
+# Mapping noms Pydantic -> noms réels colonnes
+MAPPING = {
+    "statut_marital_Divorce_e": "statut_marital_Divorcé(e)",
+    "statut_marital_Marie_e": "statut_marital_Marié(e)",
+    "departement_Ressources_Humaines": "departement_Ressources Humaines",
+    "poste_Cadre_Commercial": "poste_Cadre Commercial",
+    "poste_Directeur_Technique": "poste_Directeur Technique",
+    "poste_Representant_Commercial": "poste_Représentant Commercial",
+    "poste_Ressources_Humaines": "poste_Ressources Humaines",
+    "poste_Senior_Manager": "poste_Senior Manager",
+    "poste_Tech_Lead": "poste_Tech Lead",
+    "domaine_etude_Infra_Cloud": "domaine_etude_Infra & Cloud",
+    "domaine_etude_Ressources_Humaines": "domaine_etude_Ressources Humaines",
+    "domaine_etude_Transformation_Digitale": "domaine_etude_Transformation Digitale",
+}
+
 def predict(employee: EmployeeInput) -> PredictionOutput:
-    # 1. Conversion Pydantic -> Dict
     input_dict = employee.model_dump()
-    
-    # 2. Création du DataFrame avec colonnes fixes (ordre respecté)
+
+    # Créer DataFrame avec les 47 colonnes initialisées à 0
     data = pd.DataFrame(0, index=[0], columns=COLONNES)
-    
-    # 3. Remplissage des données reçues
+
+    # Remplir avec les valeurs reçues en appliquant le mapping
     for col, val in input_dict.items():
-        if col in data.columns:
-            data.at[0, col] = val
-            
-    # 4. Prétraitement et Prédiction
-    data_scaled = scaler.transform(data[COLONNES])
-    proba = model.predict_proba(data_scaled)[0][1]
-    
+        real_col = MAPPING.get(col, col)
+        if real_col in data.columns:
+            data.at[0, real_col] = val
+
+    # Prédiction (données déjà scalées car X_scaled exporté)
+    proba = model.predict_proba(data[COLONNES])[0][1]
+
     prediction = int(proba >= SEUIL)
     interpretation = "Risque élevé de départ" if prediction == 1 else "Risque faible de départ"
 
