@@ -7,21 +7,20 @@ from datetime import datetime
 load_dotenv()
 
 ENV = os.getenv("ENV", "development")
-
-if ENV == "production":
-    DATABASE_URL = os.getenv("DATABASE_URL")
-else:
-    DATABASE_URL = os.getenv("DATABASE_URL_DEV")
-
-engine = create_engine(DATABASE_URL, echo=False, future=True)
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 Base = declarative_base()
+engine = None
+SessionLocal = None
 
 class Employee(Base):
     __tablename__ = "employees"
     id = Column(Integer, primary_key=True, index=True)
-    age = Column(Float)
+    age = Column(Integer)
     revenu_mensuel = Column(Float)
+    annees_dans_l_entreprise = Column(Integer)
+    heures_supplementaires = Column(Integer)
+    satisfaction_employee_nature_travail = Column(Float)
+    niveau_hierarchique_poste = Column(Integer)
+    nombre_participation_pee = Column(Integer)
     score_risque_depart = Column(Float)
     ratio_stagnation = Column(Float)
     ratio_experience_interne = Column(Float)
@@ -47,20 +46,23 @@ class PredictionLog(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 def init_db():
+    global engine, SessionLocal
+    if ENV == "production":
+        DATABASE_URL = os.getenv("DATABASE_URL")
+    else:
+        DATABASE_URL = os.getenv("DATABASE_URL_DEV") or os.getenv("DATABASE_URL")
+    if not DATABASE_URL:
+        raise ValueError(f"DATABASE_URL non configurée pour ENV={ENV}")
+    engine = create_engine(DATABASE_URL, echo=False, future=True)
+    SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
     Base.metadata.create_all(bind=engine)
 
 def save_prediction(employee_data: dict, result: dict, log_data: dict):
     db = SessionLocal()
     try:
-        # On garde seulement les colonnes de la table employees
-        employee_fields = {"age", "revenu_mensuel", "score_risque_depart", 
-                          "ratio_stagnation", "ratio_experience_interne"}
-        filtered_data = {k: v for k, v in employee_data.items() if k in employee_fields}
-        
-        employee = Employee(**filtered_data)
+        employee = Employee(**employee_data)
         db.add(employee)
         db.flush()
-
         prediction = Prediction(
             employee_id=employee.id,
             probabilite_depart=result["probabilite_depart"],
@@ -68,7 +70,6 @@ def save_prediction(employee_data: dict, result: dict, log_data: dict):
             interpretation=result["interpretation"]
         )
         db.add(prediction)
-
         log = PredictionLog(
             employee_id=employee.id,
             inference_time_ms=log_data["inference_time_ms"],
@@ -77,9 +78,7 @@ def save_prediction(employee_data: dict, result: dict, log_data: dict):
             status=log_data["status"]
         )
         db.add(log)
-
         db.commit()
-
     except Exception as e:
         db.rollback()
         raise e
