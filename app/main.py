@@ -1,16 +1,14 @@
 import time
+import os
 from fastapi import FastAPI, HTTPException, Security, Depends
 from fastapi.security.api_key import APIKeyHeader
 from app.schemas import EmployeeInput, PredictionOutput
 from app.model import predict
 from app.database import init_db, save_prediction
-import os
 
 # =========================
 # API KEY AUTH
 # =========================
-# API_KEY = os.getenv("API_KEY", "dev-secret-key")
-# Après
 API_KEY = os.getenv("API_KEY", "dev-secret-key")
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
@@ -43,20 +41,26 @@ def root():
 def health():
     return {"status": "ok"}
 
+@app.get("/debug-env")
+def debug_env():
+    return {
+        "API_KEY_set": os.getenv("API_KEY") is not None,
+        "API_set": os.getenv("API") is not None,
+        "ENV": os.getenv("ENV"),
+    }
+
 @app.post("/predict", response_model=PredictionOutput, dependencies=[Depends(verify_api_key)])
 def predict_attrition(employee: EmployeeInput):
     start_time = time.time()
     try:
         result = predict(employee)
         inference_time_ms = (time.time() - start_time) * 1000
-
         log_data = {
             "inference_time_ms": inference_time_ms,
             "api_response_time_ms": inference_time_ms,
             "model_version": "v1.0",
             "status": "success"
         }
-
         save_prediction(
             employee.model_dump(),
             {
@@ -67,7 +71,6 @@ def predict_attrition(employee: EmployeeInput):
             log_data
         )
         return result
-
     except Exception as e:
         log_data = {
             "inference_time_ms": 0,
@@ -84,14 +87,3 @@ def predict_attrition(employee: EmployeeInput):
         except:
             pass
         raise HTTPException(status_code=500, detail=str(e))
-
-
-
-
-        @app.get("/debug-env")
-def debug_env():
-    return {
-        "API_KEY_set": os.getenv("API_KEY") is not None,
-        "API_set": os.getenv("API") is not None,
-        "ENV": os.getenv("ENV"),
-    }
