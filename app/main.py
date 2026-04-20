@@ -11,7 +11,7 @@ import os
 # =========================
 # API_KEY = os.getenv("API_KEY", "dev-secret-key")
 # Après
-API_KEY = os.getenv("API", "dev-secret-key")
+API_KEY = os.getenv("API_KEY", "dev-secret-key")
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 def verify_api_key(api_key: str = Security(api_key_header)):
