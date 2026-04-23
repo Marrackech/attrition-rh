@@ -1,3 +1,15 @@
+---
+title: Attrition RH
+emoji: 👥
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_file: app.py
+pinned: false
+---
+
+
+
 # Attrition RH — API de prédiction de départ des employés
 
 API machine learning qui prédit si un employé risque de quitter l'entreprise.
