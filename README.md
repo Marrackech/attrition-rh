@@ -1,177 +1,149 @@
----
-title: Attrition RH API
-emoji: 🏢
-colorFrom: blue
-colorTo: green
-sdk: docker
-pinned: false
----
-
 # Attrition RH — API de prédiction de départ des employés
 
-Ce projet est une API machine learning qui prédit si un employé risque de quitter l'entreprise.
-L'idée est simple : on envoie les informations d'un employé, et le modèle répond avec une probabilité de départ et une interprétation claire.
-
-Le projet est déployé en production sur Hugging Face Spaces et accessible publiquement ici :
-https://usermarrakech-attrition-rh-api.hf.space/docs
+API machine learning qui prédit si un employé risque de quitter l'entreprise.
+Déployée en production sur Hugging Face Spaces : https://usermarrakech-attrition-rh-api.hf.space/docs
 
 ---
 
 ## Pourquoi ce projet
 
-Le turnover en entreprise est coûteux et difficile à anticiper. Ce projet aide les équipes RH à identifier
-en amont les employés qui présentent un risque de départ, afin de pouvoir agir avant qu'il ne soit trop tard.
+Le turnover en entreprise est coûteux et difficile à anticiper. Cette API permet aux équipes RH
+d'identifier en amont les employés à risque de départ, afin d'agir avant qu'il ne soit trop tard.
 
-Côté technique, c'est un projet MLOps complet qui couvre toute la chaîne : entraînement du modèle,
-exposition via une API REST, stockage des données en base PostgreSQL, tests automatisés, Docker,
-et déploiement continu via GitHub Actions.
-
----
-
-## Comment ça marche
-
-On envoie une requête à l'API avec les données d'un employé (âge, salaire, ancienneté, satisfaction, etc.),
-et l'API retourne une probabilité de départ entre 0 et 1, ainsi qu'une interprétation en français.
-
-Exemple de requête :
-
-```bash
-curl -X POST "https://usermarrakech-attrition-rh-api.hf.space/predict" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "age": 28,
-    "revenu_mensuel": 3500,
-    "annees_dans_l_entreprise": 2,
-    "heures_supplementaires": 5,
-    "satisfaction_employee_nature_travail": 2.0,
-    "niveau_hierarchique_poste": 1,
-    "nombre_participation_pee": 0,
-    "score_risque_depart": 1.2,
-    "ratio_stagnation": 0.8,
-    "ratio_experience_interne": 0.3
-  }'
-```
-
-Réponse :
-
-```json
-{
-  "probabilite_depart": 0.87,
-  "prediction": 1,
-  "interpretation": "Risque élevé de départ",
-  "seuil_utilise": 0.283,
-  "model_version": "v1.0"
-}
-```
+Stack technique : FastAPI · Scikit-learn · PostgreSQL NEON · SQLAlchemy · Docker · GitHub Actions · Hugging Face
 
 ---
 
 ## Le modèle machine learning
 
-Le modèle est une régression logistique entraînée sur le dataset IBM HR Analytics qui contient
-1470 employés réels. Sur les 47 variables disponibles, on en a retenu 10 après sélection de features.
+| Élément | Détail |
+|---|---|
+| Algorithme | Logistic Regression (Scikit-learn) |
+| Dataset | IBM HR Analytics — 1470 employés |
+| Variables utilisées | 10 features sur 47 |
+| Seuil de décision | 0.283 |
+| F1-Score | 0.52 |
+| Recall | 0.70 |
 
-| Élément            | Détail                                      |
-|--------------------|---------------------------------------------|
-| Algorithme         | Logistic Regression (Scikit-learn)          |
-| Dataset            | IBM HR Analytics — 1470 employés            |
-| Variables utilisées | 10 features sur 47                         |
-| Seuil de décision  | 0.283                                       |
-| F1-Score           | 0.52                                        |
-| Recall             | 0.70                                        |
+**Justification des choix techniques :**
 
-Le seuil de 0.283 a été choisi volontairement bas pour maximiser le recall. Dans un contexte RH,
-il vaut mieux avoir quelques faux positifs (signaler un employé qui ne part pas) que de rater
-un vrai départ. C'est un choix métier, pas une erreur.
-
-Les 10 variables retenues sont : l'âge, le revenu mensuel, l'ancienneté dans l'entreprise,
-les heures supplémentaires, la satisfaction au travail, le niveau hiérarchique du poste,
-la participation au PEE, le score de risque de départ, le ratio de stagnation et le ratio
-d'expérience interne.
+- **Régression logistique** : choisie pour son interprétabilité dans un contexte RH. Un décideur doit pouvoir expliquer pourquoi un employé est signalé à risque.
+- **Seuil 0.283** : volontairement bas pour maximiser le recall. Dans un contexte RH, il vaut mieux signaler un faux positif (employé qui ne part pas) que de rater un vrai départ.
+- **10 features sur 47** : sélection par importance des coefficients. Les 37 variables restantes n'apportaient pas de signal significatif.
+- **NEON PostgreSQL** : base serverless compatible avec Hugging Face Spaces, sans coût fixe pour un projet de démonstration.
 
 ---
 
-## Base de données
+## Authentification
 
-Chaque prédiction est enregistrée dans une base PostgreSQL hébergée sur NEON.
-La base contient 3 tables reliées entre elles.
+L'API est protégée par une clé API (header `X-API-Key`).
 
-### employees
+Tous les appels à `/predict` nécessitent ce header :
 
-Stocke les données brutes de l'employé envoyées dans la requête.
+```bash
+curl -X POST "https://usermarrakech-attrition-rh-api.hf.space/predict" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: votre-cle-api" \
+  -d '{"age": 28, "revenu_mensuel": 3500, "score_risque_depart": 1.2}'
+```
 
-| Colonne                              | Type      |
-|--------------------------------------|-----------|
-| id                                   | Integer (PK) |
-| age                                  | Integer   |
-| revenu_mensuel                       | Float     |
-| annees_dans_l_entreprise             | Integer   |
-| heures_supplementaires               | Integer   |
-| satisfaction_employee_nature_travail | Float     |
-| niveau_hierarchique_poste            | Integer   |
-| nombre_participation_pee             | Integer   |
-| score_risque_depart                  | Float     |
-| ratio_stagnation                     | Float     |
-| ratio_experience_interne             | Float     |
-| created_at                           | Timestamp |
+Sans clé valide, l'API retourne `401 Unauthorized`.
 
-### predictions
-
-Stocke le résultat de la prédiction, lié à l'employé via employee_id.
-
-| Colonne             | Type         |
-|---------------------|--------------|
-| id                  | Integer (PK) |
-| employee_id         | Integer (FK → employees.id) |
-| probabilite_depart  | Float        |
-| prediction          | Integer (0 ou 1) |
-| interpretation      | String       |
-| created_at          | Timestamp    |
-
-### prediction_logs
-
-Stocke les informations de monitoring : temps de réponse, version du modèle, statut.
-
-| Colonne               | Type         |
-|-----------------------|--------------|
-| id                    | Integer (PK) |
-| employee_id           | Integer      |
-| inference_time_ms     | Float        |
-| api_response_time_ms  | Float        |
-| model_version         | String       |
-| status                | String (success / error) |
-| created_at            | Timestamp    |
-
-### Ce qui se passe à chaque requête
-
-1. L'utilisateur envoie les données via POST /predict
-2. FastAPI valide les données (Pydantic vérifie les types et les contraintes)
-3. Le modèle ML calcule la probabilité de départ
-4. Les données employé sont insérées dans la table employees
-5. Le résultat est inséré dans predictions avec la clé étrangère employee_id
-6. Le log de performance est inséré dans prediction_logs
-7. L'API retourne le résultat en JSON
+En local, la clé par défaut est `dev-secret-key` (définie dans `.env`).
+En production, la clé est injectée via les secrets GitHub Actions (`API_KEY`).
 
 ---
 
 ## Variables d'environnement
 
-Créer un fichier `.env` à la racine du projet avant de lancer l'API :
+Créer un fichier `.env` à la racine avant de lancer l'API :
 
 ```env
 DATABASE_URL=postgresql://user:password@host:port/dbname
-HF_TOKEN=your_huggingface_token
+DATABASE_URL_DEV=postgresql://user:password@host:port/dbname_dev
+API_KEY=votre-cle-api-secrete
+ENV=development
 ```
 
-| Variable     | Description                                        |
-|--------------|----------------------------------------------------|
-| DATABASE_URL | URL de connexion à la base PostgreSQL NEON         |
-| HF_TOKEN     | Token Hugging Face utilisé pour le déploiement CI/CD |
+| Variable | Description | Obligatoire |
+|---|---|---|
+| `DATABASE_URL` | URL PostgreSQL NEON (production) | Oui |
+| `DATABASE_URL_DEV` | URL PostgreSQL pour le développement | Non |
+| `API_KEY` | Clé d'authentification de l'API | Oui |
+| `ENV` | Environnement (`development` ou `production`) | Non (défaut: development) |
 
-Ces variables ne doivent jamais être committées dans Git. Le fichier `.env` est listé dans `.gitignore`.
-En production, elles sont injectées via les secrets GitHub Actions (Settings > Secrets and variables).
+**Bonnes pratiques de sécurité :**
 
-Un fichier `.env.example` est disponible à la racine comme modèle.
+- Le fichier `.env` est dans `.gitignore` et ne doit jamais être commité
+- Ne jamais écrire de credentials en dur dans le code
+- En production, toutes les variables sont injectées via les secrets GitHub Actions
+- Un fichier `.env.example` est disponible à la racine comme modèle
+
+---
+
+## Base de données
+
+La base PostgreSQL hébergée sur NEON contient 4 tables :
+
+### Schéma et relations
+
+```
+employees_dataset (1470 lignes — dataset IBM HR Analytics)
+    └── id (PK)
+    └── 47 features (age, revenu_mensuel, score_risque_depart, ...)
+    └── inserted_at
+
+employees (données envoyées via POST /predict)
+    └── id (PK)
+    └── 47 features de l'employé
+    └── created_at
+
+predictions
+    └── id (PK)
+    └── employee_id (FK → employees.id)
+    └── probabilite_depart (FLOAT, entre 0 et 1)
+    └── prediction (INTEGER, 0 ou 1)
+    └── interpretation (TEXT)
+    └── created_at
+
+prediction_logs
+    └── id (PK)
+    └── employee_id
+    └── inference_time_ms
+    └── api_response_time_ms
+    └── model_version
+    └── status (success / error)
+    └── created_at
+```
+
+### Flux de données
+
+1. L'utilisateur envoie les données via `POST /predict` avec le header `X-API-Key`
+2. FastAPI valide les données via Pydantic
+3. Le modèle ML calcule la probabilité de départ
+4. Les données sont insérées dans `employees`
+5. Le résultat est inséré dans `predictions` avec la clé étrangère `employee_id`
+6. Le log de performance est inséré dans `prediction_logs`
+7. L'API retourne le résultat en JSON
+
+### Initialisation de la base
+
+```bash
+python create_db.py
+```
+
+Ce script crée les 4 tables et insère les 1470 lignes du dataset IBM HR Analytics dans `employees_dataset`.
+
+---
+
+## Besoins analytiques
+
+Les données collectées à chaque prédiction permettent plusieurs analyses :
+
+- **Monitoring du modèle** : suivi du temps d'inférence via `prediction_logs.inference_time_ms`
+- **Distribution des prédictions** : ratio départs prédits / total via `predictions.prediction`
+- **Profil des employés à risque** : croisement `employees` x `predictions` pour identifier les patterns
+- **Tableau de bord RH** : les tables sont prêtes à être connectées à un outil BI (Metabase, Grafana, Power BI) via la connexion PostgreSQL NEON
 
 ---
 
@@ -189,14 +161,18 @@ conda activate attrition-api
 # Installer les dépendances
 pip install -r requirements.txt
 
-# Copier le fichier d'environnement et renseigner vos valeurs
+# Configurer les variables d'environnement
 cp .env.example .env
+# Renseigner les valeurs dans .env
 
-# Lancer l'API en local
+# Initialiser la base de données (crée les tables + insère 1470 lignes)
+python create_db.py
+
+# Lancer l'API
 uvicorn app.main:app --reload --port 8000
 ```
 
-L'API est ensuite accessible sur http://127.0.0.1:8000/docs (Swagger UI).
+L'API est accessible sur http://127.0.0.1:8000/docs (Swagger UI).
 
 ---
 
@@ -206,7 +182,7 @@ L'API est ensuite accessible sur http://127.0.0.1:8000/docs (Swagger UI).
 # Construire l'image
 docker build -t attrition-api .
 
-# Lancer le conteneur avec les variables d'environnement
+# Lancer le conteneur
 docker run -p 8000:8000 --env-file .env attrition-api
 ```
 
@@ -214,59 +190,94 @@ docker run -p 8000:8000 --env-file .env attrition-api
 
 ## Tests
 
-Les tests couvrent les endpoints API, le modèle ML et la base de données.
-Pour les tests de base de données, on utilise SQLite en mémoire afin d'éviter
-de toucher à la base de production pendant les tests.
-
 ```bash
-# Lancer tous les tests avec le rapport de couverture
+# Lancer tous les tests avec rapport de couverture
 pytest tests/ -v --cov=app --cov-report=term-missing
-
-# Générer un rapport HTML consultable dans le navigateur
-pytest tests/ -v --cov=app --cov-report=html
-# Puis ouvrir htmlcov/index.html
 ```
 
-Résultats actuels :
+### Résultats actuels
 
 ```
-Name              Stmts   Miss  Cover
--------------------------------------
+Name              Stmts   Miss  Cover   Missing
+-----------------------------------------------
 app/__init__.py       0      0   100%
-app/database.py      58      1    98%
-app/main.py          31      1    97%
-app/model.py         22      0   100%
-app/schemas.py       17      0   100%
--------------------------------------
-TOTAL               128      2    98%
+app/database.py     102      1    99%   94
+app/main.py          42      1    98%   34
+app/model.py         23      0   100%
+app/schemas.py       55      0   100%
+-----------------------------------------------
+TOTAL               222      2    99%
 
-10 passed in 5.08s
+37 passed in 5.80s
 ```
+
+### Couverture de code — 99%
+
+La suite de tests atteint **99% de couverture** sur l'ensemble du code applicatif (222 instructions, 2 manquantes). Seules 2 lignes ne sont pas couvertes : une dans `database.py` (ligne 94, branche de reconnexion rare) et une dans `main.py` (ligne 34, branche de démarrage en environnement de test).
+
+Ce niveau de couverture a été obtenu progressivement en ciblant chaque branche de code non testée, notamment :
+
+- **Le fallback d'erreur dans `/predict`** : le bloc `except` de l'endpoint appelle `save_prediction` pour logger l'échec même quand le modèle plante. Un test dédié (`test_predict_erreur_save_prediction_fallback`) vérifie que cet appel a bien lieu et que l'exception interne est silencieusement absorbée — permettant à l'API de retourner un `500` propre sans lever une seconde erreur.
+- **Le rollback de base de données** : `test_save_prediction_rollback_sur_erreur` vérifie que la session SQLAlchemy effectue bien un rollback si une insertion échoue à mi-chemin, garantissant l'intégrité des données.
+- **L'initialisation de la base selon l'environnement** : `test_init_db_production` et `test_init_db_sans_database_url` couvrent les deux branches de `init_db()` — avec et sans `DATABASE_URL` définie.
+
+### Ce que les tests couvrent
+
+Les 37 tests se répartissent en deux fichiers :
+
+**`tests/test_api.py` — 23 tests**
+
+- Endpoints GET (`/`, `/health`, `/debug-env`)
+- Authentification : appel valide, sans clé, avec mauvaise clé → `401`
+- Prédiction : succès, erreur modèle → `500`, fallback de sauvegarde en cas d'erreur
+- Insertions réelles en base SQLite en mémoire (`Employee`, `Prediction`, `PredictionLog`)
+- Persistance des données après insertion
+- Suppression en cascade (employee → prediction)
+- Rollback sur erreur de base de données
+- Initialisation de la base (`init_db`) en mode production et sans URL
+
+**`tests/test_model.py` — 14 tests**
+
+- Type de retour (`PredictionOutput`)
+- Contraintes sur les valeurs : probabilité entre 0 et 1, prédiction vaut 0 ou 1
+- Cohérence seuil / prédiction : si `probabilite >= 0.283` alors `prediction == 1`
+- Cohérence interprétation : risque élevé vs risque faible
+- Robustesse : tous les champs à zéro, valeurs extrêmes positives et négatives
+- Répétabilité : même entrée → même sortie
+
+### Philosophie de test
+
+- **Base isolée** : tous les tests utilisent une base SQLite en mémoire (via `conftest.py`), sans jamais toucher la base de production.
+- **Mocks ciblés** : les tests qui simulent des erreurs utilisent `unittest.mock.patch` pour intercepter uniquement les fonctions concernées, sans modifier le code applicatif.
+- **Pas de faux positifs** : chaque assertion teste un comportement précis (code HTTP, valeur retournée, nombre d'appels à une fonction) plutôt qu'une simple absence d'exception.
 
 ---
 
 ## Déploiement CI/CD
 
-Le pipeline se déclenche automatiquement à chaque push sur la branche main.
+Le pipeline GitHub Actions se déclenche à chaque push sur `main` :
 
-Les étapes sont les suivantes :
 1. Installation des dépendances Python
-2. Exécution de tous les tests pytest
+2. Exécution des 37 tests pytest
 3. Build de l'image Docker
-4. Déploiement automatique sur Hugging Face Spaces via HF_TOKEN
+4. Déploiement automatique sur Hugging Face Spaces via `HF_TOKEN`
 
-Les secrets DATABASE_URL et HF_TOKEN sont configurés dans GitHub (Settings > Secrets and variables > Actions)
-et jamais écrits dans le code source.
+Secrets configurés dans GitHub (Settings > Secrets and variables > Actions) :
+
+| Secret | Description |
+|---|---|
+| `DATABASE_URL` | URL PostgreSQL NEON production |
+| `HF_TOKEN` | Token Hugging Face pour le déploiement |
+| `API_KEY` | Clé d'authentification de l'API |
 
 ---
 
-## Sécurité
+## Gestion des environnements
 
-Les variables sensibles (URL de base de données, tokens) sont stockées dans `.env` en local
-et dans les secrets GitHub Actions en production. Le fichier `.env` est dans `.gitignore`
-et n'apparaît jamais dans l'historique Git.
-
-Aucune credential n'est écrite en dur dans le code source.
+| Environnement | Variable ENV | Base de données utilisée |
+|---|---|---|
+| Développement | `development` | `DATABASE_URL_DEV` |
+| Production | `production` | `DATABASE_URL` |
 
 ---
 
@@ -276,42 +287,30 @@ Aucune credential n'est écrite en dur dans le code source.
 attrition-rh/
 ├── app/
 │   ├── __init__.py
-│   ├── main.py          # Endpoints FastAPI
-│   ├── model.py         # Chargement et prédiction ML
-│   ├── schemas.py       # Validation des données (Pydantic)
-│   └── database.py      # Modèles SQLAlchemy et sauvegarde
+│   ├── main.py        # Endpoints FastAPI + authentification API Key
+│   ├── model.py       # Chargement et prédiction ML
+│   ├── schemas.py     # Validation Pydantic
+│   └── database.py    # Modèles SQLAlchemy et sauvegarde
 ├── models/
-│   ├── best_lr.pkl      # Modèle entraîné sérialisé
-│   ├── scaler.pkl       # Scaler pour la normalisation
-│   └── colonnes.json    # Ordre des features attendu
+│   ├── best_lr.pkl
+│   ├── scaler.pkl
+│   └── colonnes.json
+├── data/
+│   └── employees_full.csv
 ├── tests/
-│   ├── conftest.py      # Fixture SQLite en mémoire
-│   ├── test_api.py      # Tests endpoints et base de données
-│   └── test_model.py    # Tests modèle ML
+│   ├── conftest.py    # Fixture SQLite en mémoire
+│   ├── test_api.py    # Tests endpoints et base de données (23 tests)
+│   └── test_model.py  # Tests modèle ML (14 tests)
 ├── .github/
 │   └── workflows/
-│       └── ci.yml       # Pipeline CI/CD GitHub Actions
+│       └── ci.yml
+├── create_db.py       # Script init BDD + insertion dataset
+├── schema.sql         # Schéma SQL complet avec contraintes
 ├── Dockerfile
 ├── requirements.txt
 ├── .env.example
 └── README.md
 ```
-
----
-
-## Stack technique
-
-| Composant       | Technologie                        |
-|-----------------|------------------------------------|
-| API             | FastAPI + Uvicorn                  |
-| Modèle ML       | Scikit-learn (Logistic Regression) |
-| Base de données | PostgreSQL sur NEON                |
-| ORM             | SQLAlchemy                         |
-| Validation      | Pydantic v2                        |
-| Tests           | Pytest + pytest-cov                |
-| Docker          | Image Python 3.10 slim             |
-| CI/CD           | GitHub Actions                     |
-| Hébergement     | Hugging Face Spaces                |
 
 ---
 

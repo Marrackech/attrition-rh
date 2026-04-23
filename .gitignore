@@ -6,3 +6,9 @@ __pycache__/
 *.pyc
 *.pptx
 .env.save
+.coverage
+coverage.xml
+coverage_report.txt
+test.db
+.DS_Store
+tests/.DS_Store
