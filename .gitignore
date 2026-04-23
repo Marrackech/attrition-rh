@@ -1,14 +1,29 @@
-__pycache__/
-*.pyc
 .env
+__pycache__/
+*.db
+htmlcov/
+coverage.xml
+
+# Mac
 .DS_Store
+
+# Python
 __pycache__/
 *.pyc
-*.pptx
-.env.save
+
+# Env
+.env
+.env.*
+
+# Tests / coverage
 .coverage
+htmlcov/
 coverage.xml
-coverage_report.txt
+
+# DB locale
 test.db
-.DS_Store
-tests/.DS_Store
+
+# Logs / exports
+exports/
+*.csv
+

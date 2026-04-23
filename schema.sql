@@ -96,3 +96,45 @@ CREATE TABLE IF NOT EXISTS prediction_logs (
     status VARCHAR(10) NOT NULL,
     created_at TIMESTAMP DEFAULT NOW()
 );
+
+-- =============================================================
+-- INDEX
+-- Justification : ces colonnes sont les plus interrogées
+-- pour le monitoring, le reporting RH et les analyses BI.
+-- =============================================================
+
+-- employees : filtrage par date de création (monitoring volumétrie)
+CREATE INDEX IF NOT EXISTS idx_employees_created_at
+    ON employees(created_at);
+
+-- employees : filtrage par score de risque (profil employés à risque)
+CREATE INDEX IF NOT EXISTS idx_employees_score_risque
+    ON employees(score_risque_depart);
+
+-- predictions : jointure avec employees (requête la plus fréquente)
+CREATE INDEX IF NOT EXISTS idx_predictions_employee_id
+    ON predictions(employee_id);
+
+-- predictions : filtrage par résultat (ratio départs prédits / total)
+CREATE INDEX IF NOT EXISTS idx_predictions_prediction
+    ON predictions(prediction);
+
+-- predictions : filtrage par date (suivi temporel des prédictions)
+CREATE INDEX IF NOT EXISTS idx_predictions_created_at
+    ON predictions(created_at);
+
+-- prediction_logs : filtrage par statut success/error (monitoring erreurs)
+CREATE INDEX IF NOT EXISTS idx_logs_status
+    ON prediction_logs(status);
+
+-- prediction_logs : filtrage par date (suivi temps d'inférence dans le temps)
+CREATE INDEX IF NOT EXISTS idx_logs_created_at
+    ON prediction_logs(created_at);
+
+-- prediction_logs : jointure avec employees pour analyses croisées
+CREATE INDEX IF NOT EXISTS idx_logs_employee_id
+    ON prediction_logs(employee_id);
+
+-- employees_dataset : filtrage par score de risque (analyses exploratoires)
+CREATE INDEX IF NOT EXISTS idx_dataset_score_risque
+    ON employees_dataset(score_risque_depart);
