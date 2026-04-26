@@ -1,0 +1,67 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.10.20, pytest-9.0.2, pluggy-1.6.0 -- /opt/anaconda3/envs/mon-projet-ml/bin/python3.10
+cachedir: .pytest_cache
+rootdir: /Users/mac3/Desktop/AIengineer/projet5/attrition rh
+plugins: cov-7.1.0, anyio-4.13.0
+collecting ... collected 10 items
+
+tests/test_api.py::test_root PASSED                                      [ 10%]
+tests/test_api.py::test_health PASSED                                    [ 20%]
+tests/test_api.py::test_predict_valid PASSED                             [ 30%]
+tests/test_api.py::test_predict_invalid_age PASSED                       [ 40%]
+tests/test_api.py::test_predict_missing_field PASSED                     [ 50%]
+tests/test_api.py::test_database_employee_insertion PASSED               [ 60%]
+tests/test_api.py::test_database_prediction_insertion PASSED             [ 70%]
+tests/test_api.py::test_database_log_insertion PASSED                    [ 80%]
+tests/test_api.py::test_save_prediction_real PASSED                      [ 90%]
+tests/test_api.py::test_predict_raises_500 PASSED                        [100%]
+
+=============================== warnings summary ===============================
+app/main.py:50
+  /Users/mac3/Desktop/AIengineer/projet5/attrition rh/app/main.py:50: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+../../../../../../opt/anaconda3/envs/mon-projet-ml/lib/python3.10/site-packages/fastapi/applications.py:4598
+  /opt/anaconda3/envs/mon-projet-ml/lib/python3.10/site-packages/fastapi/applications.py:4598: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+tests/test_api.py::test_predict_valid
+  /Users/mac3/Desktop/AIengineer/projet5/attrition rh/app/model.py:25: FutureWarning: Setting an item of incompatible dtype is deprecated and will raise an error in a future version of pandas. Value '1.5' has dtype incompatible with int64, please explicitly cast to a compatible dtype first.
+    data.at[0, col] = val
+
+tests/test_api.py::test_predict_valid
+  /Users/mac3/Desktop/AIengineer/projet5/attrition rh/app/model.py:25: FutureWarning: Setting an item of incompatible dtype is deprecated and will raise an error in a future version of pandas. Value '0.8' has dtype incompatible with int64, please explicitly cast to a compatible dtype first.
+    data.at[0, col] = val
+
+tests/test_api.py::test_predict_valid
+  /Users/mac3/Desktop/AIengineer/projet5/attrition rh/app/model.py:25: FutureWarning: Setting an item of incompatible dtype is deprecated and will raise an error in a future version of pandas. Value '0.3' has dtype incompatible with int64, please explicitly cast to a compatible dtype first.
+    data.at[0, col] = val
+
+tests/test_api.py::test_predict_valid
+  /opt/anaconda3/envs/mon-projet-ml/lib/python3.10/site-packages/sklearn/utils/validation.py:2749: UserWarning: X does not have valid feature names, but LogisticRegression was fitted with feature names
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================================ tests coverage ================================
+______________ coverage: platform darwin, python 3.10.20-final-0 _______________
+
+Name              Stmts   Miss  Cover   Missing
+-----------------------------------------------
+app/__init__.py       0      0   100%
+app/database.py      58      1    98%   104
+app/main.py          31      1    97%   52
+app/model.py         22      0   100%
+app/schemas.py       17      0   100%
+-----------------------------------------------
+TOTAL               128      2    98%
+======================== 10 passed, 6 warnings in 4.83s ========================
